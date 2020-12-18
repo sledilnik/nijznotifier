@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  app:
+    image: ghcr.io/sledilnik/nijznotifier
+    volumes:
+      - "./check.py:/check.py"
+      - "data:/data"
+    environment:
+      - SLACK_CHANNEL
+      - CACHE_FILE
+      - SLACK_WEBHOOK_URL
+
+volumes:
+  data: {}

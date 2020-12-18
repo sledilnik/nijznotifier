@@ -1,0 +1,4 @@
+fullnameOverride: nijznotifier
+existingSecret: nijznotifier
+persistence:
+  enabled: true

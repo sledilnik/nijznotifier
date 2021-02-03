@@ -1,4 +1,4 @@
-FROM python:3.8-alpine3.12 AS builder
+FROM python:3.9.1-alpine3.12 AS builder
 
 RUN python -mvenv /venv
 ENV PATH="/venv/bin:$PATH"
@@ -10,7 +10,7 @@ RUN apk -X http://dl-cdn.alpinelinux.org/alpine/v3.12/main -X http://dl-cdn.alpi
     pip install -r requirements.txt && \
     apk del .build-deps
 
-FROM python:3.8-alpine3.12
+FROM python:3.9.1-alpine3.12
 RUN apk -X http://dl-cdn.alpinelinux.org/alpine/v3.12/community add --no-cache libxslt
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}

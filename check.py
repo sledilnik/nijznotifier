@@ -27,6 +27,8 @@ if SLACK_WEBHOOK_URL:
 else:
     slack = None
 
+print("Starting bot: Cache file {}, chanel {}, webhook {}".format(CACHE_FILE, SLACK_CHANNEL, SLACK_WEBHOOK_URL))
+
 
 def parse_page():
     resp = requests.get(
@@ -35,12 +37,10 @@ def parse_page():
     tree = html.fromstring(resp.content)
     date = parser.parse(tree.xpath("//div[@class='meta']/text()")[0])
     links = tree.xpath(
-        "//div[contains(@class, 'field-name-body')]//a[contains(@href, '/sites/www.nijz.si/files/uploaded/')]/@href")
+        "//div[contains(@class, 'field-name-body')]//a[contains(@href, '/files/uploaded/')]/@href")
 
-    single_vax = tree.xpath(".//table//tr")[0].xpath("./td[1]//text()")[0].replace('.', '')
-    double_vax = tree.xpath(".//table//tr")[1].xpath("./td[1]//text()")[0].replace('.', '')
     filtered_links = list(filter(lambda url: url.endswith('.xlsx'), links))
-    return (date, filtered_links, {'double_vax': double_vax, 'single_vax': single_vax})
+    return (date, filtered_links)
 
 
 def file_hash(url):
@@ -79,24 +79,6 @@ def notify_new(url, extra=None):
                 }
             )
 
-    if extra and 'doub':
-        blocks.append({
-            "type": "header",
-            "text": {
-                "type": "plain_text",
-                "text": "Cepljeni"
-            }
-        })
-        blocks.append(
-            {
-                "type": "section",
-                "text": {
-                        "type": "mrkdwn",
-                        "text": ":syringe:: {}\n:syringe::syringe:: {}".format(extra.get('single_vax', '???'), extra.get('double_vax', '???'))
-                }
-            }
-        )
-
     logging.info("Notification: {}".format(text))
 
     if slack:
@@ -105,6 +87,8 @@ def notify_new(url, extra=None):
             channel=SLACK_CHANNEL,
             blocks=blocks
         )
+    else:
+        print("No slack")
 
 
 def load_cache():
@@ -128,7 +112,7 @@ def loop():
     last_hash = load_cache()
     while True:
         logging.info('Parsing NIZJ page')
-        date, links, extra = parse_page()
+        date, links = parse_page()
         new_hash = set()
         new_files = set()
         for link in links:
@@ -136,7 +120,7 @@ def loop():
             new_hash.add(file_hash(url))
             new_files.add(url)
         if new_hash != last_hash:
-            notify_new(new_files, extra)
+            notify_new(new_files)
         last_hash = new_hash
         persist_cache(last_hash)
         time.sleep(300)

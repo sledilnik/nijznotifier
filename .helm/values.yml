@@ -1,3 +1,5 @@
+image:
+  tag: v1.0.2
 fullnameOverride: nijznotifier
 existingSecret: nijznotifier
 persistence:

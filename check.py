@@ -19,7 +19,8 @@ SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')
 SLACK_CHANNEL = os.getenv('SLACK_CHANNEL', '#sandbox')
 
 headers = {
-    'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0'
+    'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0',
+    'Referer': 'https://nijz.si/nalezljive-bolezni/koronavirus/dnevno-spremljanje-okuzb-s-sars-cov-2-covid-19/'
 }
 
 if SLACK_WEBHOOK_URL:
@@ -32,12 +33,12 @@ print("Starting bot: Cache file {}, chanel {}, webhook {}".format(CACHE_FILE, SL
 
 def parse_page():
     resp = requests.get(
-        'https://www.nijz.si/sl/dnevno-spremljanje-okuzb-s-sars-cov-2-covid-19', headers=headers)
+        'https://nijz.si/nalezljive-bolezni/koronavirus/dnevno-spremljanje-okuzb-s-sars-cov-2-covid-19/', headers=headers)
     resp.raise_for_status()
     tree = html.fromstring(resp.content)
-    date = parser.parse(tree.xpath("//div[@class='meta']/text()")[0])
+    date = parser.parse(tree.xpath("//div[@class='date-modified']/text()")[0].lstrip('Zadnje posodobljeno: '))
     links = tree.xpath(
-        "//div[contains(@class, 'field-name-body')]//a[contains(@href, '/files/uploaded/')]/@href")
+        "//div[contains(@class, 'single-file')]//a[contains(@href, '/wp-content/uploads/')]/@href")
 
     filtered_links = list(filter(lambda url: url.endswith('.xlsx'), links))
     return (date, filtered_links)
@@ -116,9 +117,8 @@ def loop():
         new_hash = set()
         new_files = set()
         for link in links:
-            url = "https://www.nijz.si/{}".format(link)
-            new_hash.add(file_hash(url))
-            new_files.add(url)
+            new_hash.add(file_hash(link))
+            new_files.add(link)
         if new_hash != last_hash:
             notify_new(new_files)
         last_hash = new_hash

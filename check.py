@@ -20,7 +20,7 @@ SLACK_CHANNEL = os.getenv('SLACK_CHANNEL', '#sandbox')
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0',
-    'Referer': 'https://nijz.si/nalezljive-bolezni/koronavirus/dnevno-spremljanje-okuzb-s-sars-cov-2-covid-19/'
+    'Referer': 'https://nijz.si/nalezljive-bolezni/koronavirus/spremljanje-okuzb-s-sars-cov-2-covid-19/'
 }
 
 if SLACK_WEBHOOK_URL:
@@ -33,14 +33,14 @@ print("Starting bot: Cache file {}, chanel {}, webhook {}".format(CACHE_FILE, SL
 
 def parse_page():
     resp = requests.get(
-        'https://nijz.si/nalezljive-bolezni/koronavirus/dnevno-spremljanje-okuzb-s-sars-cov-2-covid-19/', headers=headers)
+        'https://nijz.si/nalezljive-bolezni/koronavirus/spremljanje-okuzb-s-sars-cov-2-covid-19/', headers=headers)
     resp.raise_for_status()
     tree = html.fromstring(resp.content)
     date = parser.parse(tree.xpath("//div[@class='date-modified']/text()")[0].lstrip('Zadnje posodobljeno: '))
     links = tree.xpath(
-        "//div[contains(@class, 'single-file')]//a[contains(@href, '/wp-content/uploads/')]/@href")
+        "//p/a[contains(@href, '/wp-content/uploads/')]/@href")
 
-    filtered_links = list(filter(lambda url: url.endswith('.xlsx'), links))
+    filtered_links = list(filter(lambda url: url.endswith('.xlsx') and 'DNEVNI' in url.upper(), links))
     return (date, filtered_links)
 
 
@@ -121,6 +121,8 @@ def loop():
             new_files.add(link)
         if new_hash != last_hash:
             notify_new(new_files)
+        else:
+            logging.info('Nothing new')
         last_hash = new_hash
         persist_cache(last_hash)
         time.sleep(300)
